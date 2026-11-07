@@ -1,0 +1,49 @@
+# virtualenvs and installs
+.venv/
+.venv-*/
+.venv-install.log
+venv/
+*.egg-info/
+# local reference clones (not ours to redistribute)
+.ref/
+# caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+# logs and test-run artefacts (incl. files written by other tools at the repo root)
+*.log
+test-results-*.json
+test-results-*.log
+# secrets and env
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+# generated checkpoints / data
+demo-ckpts/
+*.safetensors
+*.safetensors.index.json
+*.bin
+*.pt
+*.pth
+*.gguf
+*.onnx
+*.npy
+*.npz
+# plugin data / sqlite
+plugin-data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

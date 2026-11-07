@@ -1,0 +1,18 @@
+WeightScope - attribution and provenance notes
+
+* All code in this repository was written fresh for WeightScope. No code was
+  copied or adapted from other projects.
+
+* dukemawex/secret-loyalties-audit (harness/weight_diff.py) was read as prior
+  art. At the commit inspected (7623698, 2026-07-26) that repository has no
+  LICENSE file and GitHub reports no license, so none of its code was reused.
+  The general idea of ranking tensors by per-tensor L2 change relative to the
+  base norm and reading safetensors lazily also appears there; WeightScope's
+  implementation (pure numpy, its own safetensors parser, chunked reads,
+  hardening, per-layer aggregation) is independent.
+
+* The safetensors parser follows the publicly documented safetensors file
+  format (8-byte little-endian header length, JSON header, data offsets).
+  The `safetensors` library itself is not used or bundled.
+
+* Runtime dependency (not bundled): NumPy, BSD-3-Clause licence.

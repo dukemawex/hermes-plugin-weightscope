@@ -1,0 +1,1127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/weightscope/remote-worker.schema.json",
+  "title": "WeightScope remote worker protocol weightscope-remote/1",
+  "description": "Requests and responses for GET /v1/health, POST /v1/diff, POST /v1/summary. Checkpoints are passed by reference; there is no upload. The client additionally enforces a maximum response size (remote_max_response_mib) and rejects NaN/Infinity.",
+  "$defs": {
+    "envelopeBase": {
+      "type": "object",
+      "required": [
+        "ok",
+        "protocol"
+      ],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "protocol": {
+          "const": "weightscope-remote/1"
+        }
+      }
+    },
+    "checkpointRef": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "description": "Absolute path ON THE WORKER, inside its approved roots"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "description": "Opaque object reference (reserved; the reference worker rejects it)"
+        }
+      }
+    },
+    "diffRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "a",
+        "b",
+        "params"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "weightscope-remote/1"
+        },
+        "a": {
+          "$ref": "#/$defs/checkpointRef"
+        },
+        "b": {
+          "$ref": "#/$defs/checkpointRef"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "top_k": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "top_layers": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "tolerance": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rank_by": {
+              "enum": [
+                "relative",
+                "l2",
+                "max_abs"
+              ]
+            },
+            "device": {
+              "type": "string",
+              "maxLength": 32
+            }
+          }
+        }
+      }
+    },
+    "summaryRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "checkpoint",
+        "params"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "weightscope-remote/1"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/checkpointRef"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "max_list": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 200
+            },
+            "hash_files": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "errorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ok",
+        "protocol",
+        "error"
+      ],
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "protocol": {
+          "const": "weightscope-remote/1"
+        },
+        "error": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "healthResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ok",
+        "protocol",
+        "device"
+      ],
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "protocol": {
+          "const": "weightscope-remote/1"
+        },
+        "device": {
+          "$ref": "#/$defs/device"
+        }
+      }
+    },
+    "diffResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ok",
+        "protocol",
+        "result",
+        "device"
+      ],
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "protocol": {
+          "const": "weightscope-remote/1"
+        },
+        "result": {
+          "$ref": "#/$defs/diffResult"
+        },
+        "device": {
+          "$ref": "#/$defs/device"
+        }
+      }
+    },
+    "summaryResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ok",
+        "protocol",
+        "result",
+        "device"
+      ],
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "protocol": {
+          "const": "weightscope-remote/1"
+        },
+        "result": {
+          "$ref": "#/$defs/summaryResult"
+        },
+        "device": {
+          "$ref": "#/$defs/device"
+        }
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend",
+        "device"
+      ],
+      "description": "Self-reported by the worker. The client displays it as worker-reported and never as verified hardware.",
+      "properties": {
+        "backend": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "device": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "device_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "compute_dtype": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "accumulate_dtype": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "torch_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "cuda_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "numpy_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "worker": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "chunk_elems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        }
+      }
+    },
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "layout",
+        "files",
+        "tensors",
+        "parameters",
+        "bytes"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "layout": {
+          "enum": [
+            "file",
+            "directory",
+            "sharded-index"
+          ]
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "tensors": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "parameters": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        }
+      }
+    },
+    "tensorRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "shape",
+        "dtype",
+        "l2_diff",
+        "base_l2",
+        "rel_change",
+        "max_abs_diff",
+        "cosine",
+        "frac_changed"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "shape": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000000000
+          }
+        },
+        "dtype": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "l2_diff": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "base_l2": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "rel_change": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_abs_diff": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cosine": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -1,
+          "maximum": 1
+        },
+        "frac_changed": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "zero_baseline": {
+          "type": "boolean"
+        },
+        "nonfinite_a": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "nonfinite_b": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        }
+      }
+    },
+    "layerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layer",
+        "tensors",
+        "changed_tensors",
+        "parameters",
+        "l2_diff",
+        "base_l2",
+        "rel_change",
+        "max_abs_diff"
+      ],
+      "properties": {
+        "layer": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "tensors": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "changed_tensors": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "parameters": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "l2_diff": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "base_l2": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "rel_change": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_abs_diff": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "zero_baseline": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cappedBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "items",
+        "truncated"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 200
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "description": "count >= len(items) (client-enforced)"
+    },
+    "diffResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "a",
+        "b",
+        "settings",
+        "totals",
+        "top_tensors",
+        "top_layers",
+        "only_in_a",
+        "only_in_b",
+        "shape_mismatches",
+        "dtype_mismatches",
+        "undecoded_dtypes",
+        "nonfinite",
+        "warnings",
+        "elapsed_s"
+      ],
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/brief"
+        },
+        "b": {
+          "$ref": "#/$defs/brief"
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tolerance",
+            "rank_by",
+            "top_k",
+            "top_layers"
+          ],
+          "properties": {
+            "tolerance": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rank_by": {
+              "enum": [
+                "relative",
+                "l2",
+                "max_abs"
+              ]
+            },
+            "top_k": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "top_layers": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "totals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "common_tensors",
+            "compared_tensors",
+            "changed_tensors",
+            "identical_tensors",
+            "changed_layers",
+            "compared_parameters",
+            "changed_parameters",
+            "frac_parameters_changed",
+            "global_l2_diff",
+            "global_rel_change"
+          ],
+          "properties": {
+            "common_tensors": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "compared_tensors": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "changed_tensors": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "identical_tensors": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "changed_layers": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "compared_parameters": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "changed_parameters": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000000000
+            },
+            "frac_parameters_changed": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "global_l2_diff": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "global_rel_change": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "description": "Also enforced by the client: changed_tensors + identical_tensors == compared_tensors; changed_parameters <= compared_parameters"
+        },
+        "top_tensors": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/tensorRecord"
+          }
+        },
+        "top_layers": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/layerRecord"
+          }
+        },
+        "only_in_a": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1024
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "only_in_b": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1024
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "shape_mismatches": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "shape_a",
+                      "shape_b"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      "shape_a": {
+                        "type": "array",
+                        "maxItems": 16,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000000000000
+                        }
+                      },
+                      "shape_b": {
+                        "type": "array",
+                        "maxItems": 16,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000000000000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "dtype_mismatches": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "dtype_a",
+                      "dtype_b"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      "dtype_a": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "dtype_b": {
+                        "type": "string",
+                        "maxLength": 32
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "undecoded_dtypes": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "dtype_a",
+                      "dtype_b"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      "dtype_a": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "dtype_b": {
+                        "type": "string",
+                        "maxLength": 32
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "nonfinite": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "nonfinite_a",
+                      "nonfinite_b",
+                      "of"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      "nonfinite_a": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000000000000
+                      },
+                      "nonfinite_b": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000000000000
+                      },
+                      "of": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000000000000
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "elapsed_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "summaryResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint",
+        "dtypes",
+        "files",
+        "files_truncated",
+        "largest_tensors",
+        "tensors",
+        "undecoded_dtype_tensors",
+        "layers",
+        "warnings",
+        "note",
+        "elapsed_s"
+      ],
+      "properties": {
+        "checkpoint": {
+          "$ref": "#/$defs/brief"
+        },
+        "dtypes": {
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": {
+            "maxLength": 32
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tensors",
+              "parameters",
+              "bytes"
+            ],
+            "properties": {
+              "tensors": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              },
+              "parameters": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              }
+            }
+          }
+        },
+        "files": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file",
+              "bytes",
+              "header_bytes",
+              "tensors"
+            ],
+            "properties": {
+              "file": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              },
+              "header_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              },
+              "tensors": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "metadata": {
+                "type": "object",
+                "maxProperties": 20,
+                "propertyNames": {
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              }
+            }
+          }
+        },
+        "files_truncated": {
+          "type": "boolean"
+        },
+        "largest_tensors": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "shape",
+              "parameters"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "shape": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000000000000
+                }
+              },
+              "parameters": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000000000000
+              }
+            }
+          }
+        },
+        "tensors": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "dtype",
+                      "shape",
+                      "parameters"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      "dtype": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "shape": {
+                        "type": "array",
+                        "maxItems": 16,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000000000000
+                        }
+                      },
+                      "parameters": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000000000000
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "undecoded_dtype_tensors": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/cappedBlock"
+            },
+            {
+              "properties": {
+                "items": {
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1024
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "layers": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "elapsed_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/diffRequest"
+    },
+    {
+      "$ref": "#/$defs/summaryRequest"
+    },
+    {
+      "$ref": "#/$defs/healthResponse"
+    },
+    {
+      "$ref": "#/$defs/diffResponse"
+    },
+    {
+      "$ref": "#/$defs/summaryResponse"
+    },
+    {
+      "$ref": "#/$defs/errorResponse"
+    }
+  ]
+}

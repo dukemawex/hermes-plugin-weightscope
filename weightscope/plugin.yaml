@@ -1,0 +1,68 @@
+name: weightscope
+version: "0.1.0"
+description: Safetensors checkpoint inspector - per-tensor and per-layer weight diffs with hardened parsing; offline by default, optional remote GPU worker
+author: Duke
+license: MIT
+manifest_version: 2
+requires_hermes: ">=0.23.0"
+tags: [models, research, safetensors, interpretability]
+provides_tools:
+  - ckpt_summary
+  - ckpt_diff
+python_dependencies:
+  - "numpy>=1.26,<3"
+config_schema:
+  max_total_gib:
+    type: float
+    default: 64
+    label: "Max checkpoint size (GiB)"
+    description: "Refuse checkpoints whose tensor data exceeds this many GiB"
+  max_tensors:
+    type: int
+    default: 200000
+    description: "Refuse checkpoints with more tensors than this"
+  max_header_mib:
+    type: int
+    default: 100
+    description: "Maximum safetensors JSON header size in MiB"
+  allow_external_symlinks:
+    type: bool
+    default: false
+    description: "Allow shard symlinks that resolve outside the checkpoint directory (needed for Hugging Face cache snapshots)"
+  record_history:
+    type: bool
+    default: true
+    description: "Keep paths and headline numbers of recent diffs in this plugin's data directory"
+  backend:
+    type: str
+    choices: [auto, numpy, torch, remote]
+    default: auto
+    description: "Compute route for ckpt_diff. auto = local CUDA/MPS GPU (torch) -> configured remote worker -> CPU numpy only when no remote is configured. torch is optional and not installed by this plugin"
+  device:
+    type: str
+    default: ""
+    description: "torch device (cuda, cuda:1, mps, cpu); empty = pick automatically"
+  device_budget_mib:
+    type: int
+    default: 256
+    description: "torch backend: approximate device memory used per chunk pair (sets the transfer batch size)"
+  remote_url:
+    type: str
+    default: ""
+    description: "HTTPS base URL of a WeightScope remote worker (see docs/REMOTE_WORKER.md in the plugin). Empty = fully offline, no network use"
+  remote_token_env:
+    type: str
+    default: "WEIGHTSCOPE_REMOTE_TOKEN"
+    description: "NAME of the env var / Hermes secret holding the worker bearer token (the token itself never goes in config)"
+  remote_timeout_s:
+    type: float
+    default: 120
+    description: "Remote request timeout in seconds (1-3600)"
+  remote_max_response_mib:
+    type: float
+    default: 4
+    description: "Maximum remote response size in MiB"
+  remote_allow_http_localhost:
+    type: bool
+    default: false
+    description: "Allow plain http:// only for localhost/127.0.0.1/::1 test workers. Remote hosts always require https"

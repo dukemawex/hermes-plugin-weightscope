@@ -12,9 +12,10 @@ tests/test_backends.py     numpy/torch(cpu) backend parity, auto-fallback, devic
 tests/test_hardware.py     CUDA/MPS parity, marked `hardware`, deselected by default (run: pytest -m hardware on a GPU box)
 tests/test_remote.py       remote routing contract tests against in-process 127.0.0.1 servers (protocol only, CPU)
 tests/remote_fixture.py    scripted fake worker + loader for the reference worker
+tests/test_demo.py         published-model demo: --fetch consent, mocked HTTP, SHA cache, identical-file control
 tests/test_hermes_integration.py   loads the plugin through Hermes's real PluginManager / tool registry / CLI
 tests/stfixtures.py        tiny deterministic safetensors writer used by tests and the demo
-scripts/demo.sh            < 90 s terminal demo, no model key, isolated HERMES_HOME
+scripts/demo.sh            < 90 s synthetic terminal demo, no model key, isolated HERMES_HOME
 scripts/make_fixtures.py   writes the demo checkpoints
 scripts/bench_synthetic.py [--backend numpy|torch|auto] [--device D]  ~1 GB speed / peak-memory check (temp files deleted afterwards)
 ```
@@ -36,7 +37,8 @@ uv pip install --python .venv/bin/python torch --index-url https://download.pyto
 .venv/bin/python -m pytest -m hardware                          # CUDA/MPS parity, only meaningful on a GPU machine
 .venv/bin/hermes plugins validate weightscope --install-deps    # catalog CI gate
 (cd weightscope && ../.venv/bin/hermes plugins doctor . --ci)   # runtime contract check
-scripts/demo.sh                                                 # demo
+scripts/demo.sh                                                 # synthetic demo (no network)
+.venv/bin/hermes weightscope demo --fetch                       # published SmolLM2-135M pair (~513 MiB, once)
 ```
 
 Weight differences are numeric only; they do not establish a backdoor, behaviour change, safety status or tampering.

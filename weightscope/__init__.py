@@ -1,7 +1,9 @@
-"""WeightScope: offline safetensors checkpoint summary and diff for Hermes Agent.
+"""WeightScope: offline-by-default safetensors checkpoint summary and diff for Hermes Agent.
 
 Registers two tools (ckpt_summary, ckpt_diff), the `hermes weightscope` CLI command
-and the `/weightscope` slash command. Pure numpy; no network, no model execution.
+and the `/weightscope` slash command. Numpy on CPU by default; optional torch GPU backend
+and optional remote worker. The only other network use is `weightscope demo --fetch`, which
+downloads pinned public Hugging Face checkpoints after explicit consent. No model execution.
 """
 
 from __future__ import annotations
@@ -29,9 +31,9 @@ def register(ctx):
                       handler=ckpt_summary, emoji="🔬")
     ctx.register_tool(name="ckpt_diff", toolset=TOOLSET, schema=schemas.CKPT_DIFF,
                       handler=ckpt_diff, emoji="🔬")
-    ctx.register_cli_command(name="weightscope", help="Offline safetensors checkpoint summary/diff",
+    ctx.register_cli_command(name="weightscope", help="Safetensors checkpoint summary/diff (offline by default)",
                              setup_fn=setup_argparse, handler_fn=make_cli_handler(get_setting),
-                             description="Compare two local safetensors checkpoints tensor by tensor.")
+                             description="Compare two local safetensors checkpoints tensor by tensor; `demo --fetch` runs the published-model walkthrough.")
     ctx.register_command("weightscope", handler=make_slash_handler(get_setting, get_cwd),
-                         description="Summarize or diff local safetensors checkpoints (offline)",
-                         args_hint="summary <path> | diff <base> <candidate> | recent")
+                         description="Summarize or diff local safetensors checkpoints (offline by default)",
+                         args_hint="summary <path> | diff <base> <candidate> | recent | demo [--fetch]")

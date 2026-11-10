@@ -1,8 +1,9 @@
 name: weightscope
-version: "0.1.0"
+version: "0.1.1"
 description: Safetensors checkpoint inspector - per-tensor and per-layer weight diffs with hardened parsing; offline by default, optional remote GPU worker
 author: Duke
 license: MIT
+homepage: https://github.com/dukemawex/hermes-plugin-weightscope
 manifest_version: 2
 requires_hermes: ">=0.23.0"
 tags: [models, research, safetensors, interpretability]

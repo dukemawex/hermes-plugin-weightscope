@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# WeightScope demo: synthetic checkpoints -> real `hermes weightscope` CLI. No model key, no network.
+# WeightScope synthetic demo: local fixtures -> real `hermes weightscope` CLI. No model key, no network.
+# For the published-model walkthrough (SmolLM2-135M vs Instruct, ~513 MiB download once), run:
+#   hermes weightscope demo --fetch
 # Usage: scripts/demo.sh            (expects .venv with Hermes v0.23.0 + numpy; see README)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

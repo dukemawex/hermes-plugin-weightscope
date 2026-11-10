@@ -62,7 +62,7 @@ def test_plugin_loads_and_registers_through_plugin_manager(manager):
     loaded = manager._plugins["weightscope"]
     assert loaded.error is None, loaded.error
     assert loaded.enabled is True
-    assert loaded.manifest.version == "0.1.0"
+    assert loaded.manifest.version == "0.1.1"
     assert sorted(loaded.tools_registered) == ["ckpt_diff", "ckpt_summary"]
     # provides_tools in plugin.yaml matches what register() actually registered
     import hermes_yaml as yaml
@@ -247,3 +247,16 @@ def test_remote_route_through_hermes_registry_and_cli(tmp_path, monkeypatch):
         p = _run_hermes(env, "weightscope", "diff", str(a), str(b), "--backend", "remote")
         assert p.returncode == 1 and "rejected the token" in p.stderr
     worker.close()
+
+
+@pytest.mark.skipif(not HERMES_BIN.exists(), reason="hermes entry point not in this venv")
+def test_demo_requires_fetch_and_does_not_download(tmp_path, monkeypatch):
+    """Without --fetch the CLI must refuse and must not hit the network."""
+    env = _make_home(tmp_path)
+    cache = tmp_path / "demo-cache"
+    monkeypatch.setenv("WEIGHTSCOPE_DEMO_CACHE", str(cache))
+    p = _run_hermes(env, "weightscope", "demo", "--cache-dir", str(cache))
+    assert p.returncode == 1
+    err = (p.stderr + p.stdout)
+    assert "--fetch" in err and "huggingface.co" in err
+    assert list(cache.glob("**/*")) == [] or not any(cache.rglob("*.safetensors"))

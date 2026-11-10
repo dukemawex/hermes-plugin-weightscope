@@ -15,7 +15,8 @@ from .st_reader import WeightScopeError
 from .tools import backend_choice, limits_from, limits_from_bool, remote_from, resolve_path
 
 USAGE = ("Usage:\n  /weightscope summary <path>\n  /weightscope diff <base> <candidate> [--top N] "
-         "[--rank-by relative|l2|max_abs] [--tolerance X] [--backend auto|numpy|torch|remote] [--device D]\n  /weightscope recent")
+         "[--rank-by relative|l2|max_abs] [--tolerance X] [--backend auto|numpy|torch|remote] [--device D]\n"
+         "  /weightscope recent\n  /weightscope demo [--fetch]   # published SmolLM2-135M pair; --fetch consents to download")
 
 
 def setup_argparse(sub: argparse.ArgumentParser) -> None:
@@ -45,6 +46,19 @@ def setup_argparse(sub: argparse.ArgumentParser) -> None:
     r = subs.add_parser("recent", help="Show recently recorded diffs (from this plugin's data dir)")
     r.add_argument("--limit", type=int, default=10)
     r.add_argument("--json", action="store_true")
+    demo = subs.add_parser(
+        "demo",
+        help="Published-model walkthrough: SmolLM2-135M vs Instruct, plus an identical-file control",
+    )
+    demo.add_argument("--fetch", action="store_true",
+                      help="Consent to download the pinned public checkpoints from Hugging Face if they "
+                           "are not already cached (~513 MiB total). Offline by default; no download without this flag.")
+    demo.add_argument("--json", action="store_true")
+    demo.add_argument("--backend", choices=["auto", "numpy", "torch"], default="numpy")
+    demo.add_argument("--cache-dir", default=None, help="Directory for the pinned demo checkpoints")
+    demo.add_argument("--heatmap", default=None, help="Write a per-layer SVG heatmap to this path")
+    demo.add_argument("--no-heatmap", action="store_true")
+    demo.add_argument("--top", type=int, default=8, help="Top-k tensors shown in the printed tables")
     for p in (s, d, h):
         p.add_argument("--remote-url", default=None, help="Remote worker base URL (https; overrides the setting)")
         p.add_argument("--remote-token-env", default=None,
@@ -85,7 +99,18 @@ def make_cli_handler(get_setting=None):
                 rows = history.recent(args.limit)
                 print(json.dumps(rows, indent=2) if args.json else render_recent(rows))
                 return 0
-            print("usage: hermes weightscope {summary PATH | diff A B | remote-health | recent} [--json]")
+            if cmd == "demo":
+                from .demo import _progress_stderr, render_demo, run_demo
+                res = run_demo(fetch=bool(args.fetch), cache_dir=args.cache_dir,
+                               backend=args.backend or "numpy", top=args.top,
+                               heatmap=not args.no_heatmap, heatmap_path=args.heatmap,
+                               get_setting=get_setting,
+                               progress=_progress_stderr if args.fetch else None)
+                if get_setting is not None and limits_from_bool(get_setting, "record_history"):
+                    history.record(res["diff"], "demo")
+                print(json.dumps(res, indent=2) if args.json else render_demo(res, top=args.top))
+                return 0
+            print("usage: hermes weightscope {summary PATH | diff A B | remote-health | recent | demo [--fetch]} [--json]")
             return 2
         except WeightScopeError as exc:
             if getattr(args, "json", False):
@@ -145,6 +170,15 @@ def make_slash_handler(get_setting=None, get_cwd=None):
                 return render_diff(res)
             if argv[0] == "recent":
                 return render_recent(history.recent(10))
+            if argv[0] == "demo":
+                from .demo import render_demo, run_demo
+                rest = argv[1:]
+                fetch = any(a in ("--fetch", "fetch") for a in rest)
+                no_heatmap = "--no-heatmap" in rest
+                res = run_demo(fetch=fetch, get_setting=get_setting, heatmap=not no_heatmap)
+                if get_setting is not None and limits_from_bool(get_setting, "record_history"):
+                    history.record(res["diff"], "slash")
+                return render_demo(res)
             return USAGE
         except WeightScopeError as exc:
             return f"weightscope error: {exc}"
